@@ -1,0 +1,119 @@
+## Machine Learning Project
+  
+  P.Y.  
+  12/8/2017  
+  
+  
+  
+### Introduction  
+  
+#### Background
+  
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+  
+  
+#### Data
+  
+The training data for this project are available here: https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+  
+The test data are available here:
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+  
+The data for this project come from this source: http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har. If you use the document you create for this class for any purpose please cite them as they have been very generous in allowing their data to be used for this kind of assignment.
+  
+  
+  
+### Analysis
+  
+#### Reproduceability
+  
+Load the following libraries and set the seed
+```{r}
+library(lattice)
+library(ggplot2)
+library(caret)
+library(rattle)
+library(rpart)
+library(randomForest)
+
+set.seed(1234)
+```
+  
+  
+#### Loading and Cleaning Data  
+  
+```{r, results='hide'}
+# load data into R
+
+trainset <- read.csv("C:/Users/Catherine/Documents/R/Course 8/assignment/pml-training.csv", na.strings=c("NA","#DIV/0!",""))
+testset <- read.csv("C:/Users/Catherine/Documents/R/Course 8/assignment/pml-testing.csv", na.strings=c("NA","#DIV/0!",""))
+
+# keep columns with values (delete columns with all missing values)
+
+trainset <- trainset[ , colSums(is.na(trainset))==0]
+testset <- testset[ , colSums(is.na(testset))==0]
+
+# delete variables that are irrelevant to the analysis (the first 7 columns)
+
+trainset <- trainset[ , -c(1:7)]
+testset <- testset[ , -c(1:7)]
+
+# take a look at the structure of two data sets
+str(trainset)
+str(testset)
+```
+  
+  
+#### Cross Validation
+  
+To perform cross validation, the trainset is partionned into two parts: training(70%) and testing(30%)  
+  
+```{r}
+inTrain <- createDataPartition(y=trainset$classe, p=0.7, list=FALSE)
+training <- trainset[inTrain, ]
+testing <- trainset[-inTrain, ]
+```
+  
+  
+#### MODEL 1: Decision Tree  
+  
+```{r}
+# fit the model using the random forest method and print the tree
+fit1 <- rpart(classe~., data = training, method = "class")
+fancyRpartPlot(fit1)
+
+# predict new values on testing data set
+pred1 <- predict(fit1, newdata = testing, type="class")
+
+# test results on testing data set
+confusionMatrix(pred1, testing$classe)
+```
+  
+  
+#### MODEL 2: Random Forest  
+  
+```{r}
+# fit the model using random forest method
+fit2 <- randomForest(classe~., data=training, method="class")
+
+# predict new values on testing data set
+pred2 <- predict(fit2, newdata = testing, type = "class")
+
+# test results on testing data set
+confusionMatrix(pred2, testing$classe)
+```
+  
+  
+#### Final Decision on Model
+  
+The accuracy for the decision tree model is 0.6879 with 95% CI (0.6758, 0.6997)     
+The accuracy for the random forest model is 0.9963 with 95% CI(0.9943, 0.9977)  
+Thus, I choose random forest method to use  
+  
+Now, apply the Model 2: random forest on the testset
+```{r}
+pred3 <- predict(fit2, newdata = testset, type="class")
+pred3
+```
+  
+  
